@@ -5,10 +5,14 @@
  *
  * Use Case 1: Application Entry & Welcome Message
  * Use Case 2: Basic Room Types & Static Availability
+ * Use Case 3: Centralized Room Inventory Management
  *
  * @author Developer
- * @version 2.0
+ * @version 3.0
  */
+
+import java.util.HashMap;
+import java.util.Map;
 
 abstract class Room {
     protected int numberOfBeds;
@@ -46,35 +50,59 @@ class SuiteRoom extends Room {
     }
 }
 
+/**
+ * UC3: Centralized Inventory
+ */
+class RoomInventory {
+    private Map<String, Integer> roomAvailability;
+
+    public RoomInventory() {
+        roomAvailability = new HashMap<>();
+        initializeInventory();
+    }
+
+    private void initializeInventory() {
+        roomAvailability.put("Single", 5);
+        roomAvailability.put("Double", 3);
+        roomAvailability.put("Suite", 2);
+    }
+
+    public Map<String, Integer> getRoomAvailability() {
+        return roomAvailability;
+    }
+
+    public void updateAvailability(String roomType, int count) {
+        roomAvailability.put(roomType, count);
+    }
+}
+
 public class BookMyStay {
 
     public static void main(String[] args) {
 
-        // UC1: Welcome Message
+        // UC1
         System.out.println("Welcome to the Hotel Booking Management System");
         System.out.println("System initialized successfully.\n");
 
-        // UC2: Room Initialization
-        System.out.println("Hotel Room Initialization\n");
+        // UC3 (replaces UC2 availability variables)
+        System.out.println("Hotel Room Inventory Status\n");
 
         SingleRoom single = new SingleRoom();
         DoubleRoom doubleRoom = new DoubleRoom();
         SuiteRoom suite = new SuiteRoom();
 
-        int singleAvailable = 5;
-        int doubleAvailable = 3;
-        int suiteAvailable = 2;
+        RoomInventory inventory = new RoomInventory();
 
         System.out.println("Single Room:");
         single.displayRoomDetails();
-        System.out.println("Available: " + singleAvailable + "\n");
+        System.out.println("Available Rooms: " + inventory.getRoomAvailability().get("Single") + "\n");
 
         System.out.println("Double Room:");
         doubleRoom.displayRoomDetails();
-        System.out.println("Available: " + doubleAvailable + "\n");
+        System.out.println("Available Rooms: " + inventory.getRoomAvailability().get("Double") + "\n");
 
         System.out.println("Suite Room:");
         suite.displayRoomDetails();
-        System.out.println("Available: " + suiteAvailable);
+        System.out.println("Available Rooms: " + inventory.getRoomAvailability().get("Suite"));
     }
 }
