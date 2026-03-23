@@ -229,6 +229,11 @@ class BookingReportService {
 
         List<Reservation> list = history.getConfirmedReservations();
 
+        if (list.isEmpty()) {
+            System.out.println("No bookings found.");
+            return;
+        }
+
         for (Reservation r : list) {
             System.out.println("Guest: " + r.getGuestName()
                     + ", Room Type: " + r.getRoomType());
@@ -270,6 +275,44 @@ class ReservationValidator {
 }
 
 /* =========================
+   UC10: CANCELLATION SERVICE
+   ========================= */
+class CancellationService {
+
+    private Stack<String> releasedRoomIds = new Stack<>();
+    private Map<String, String> reservationRoomTypeMap = new HashMap<>();
+
+    public void registerBooking(String reservationId, String roomType) {
+        reservationRoomTypeMap.put(reservationId, roomType);
+    }
+
+    public void cancelBooking(String reservationId, RoomInventory inventory) {
+
+        if (!reservationRoomTypeMap.containsKey(reservationId)) {
+            System.out.println("Invalid cancellation request.");
+            return;
+        }
+
+        String roomType = reservationRoomTypeMap.get(reservationId);
+
+        Map<String, Integer> availability = inventory.getRoomAvailability();
+        inventory.updateAvailability(roomType, availability.get(roomType) + 1);
+
+        releasedRoomIds.push(reservationId);
+        reservationRoomTypeMap.remove(reservationId);
+
+        System.out.println("Booking cancelled successfully. Inventory restored for room type: " + roomType);
+    }
+
+    public void showRollbackHistory() {
+        System.out.println("\nRollback History (Most Recent First):");
+        for (String id : releasedRoomIds) {
+            System.out.println("Released Reservation ID: " + id);
+        }
+    }
+}
+
+/* =========================
    MAIN CLASS
    ========================= */
 public class BookMyStay {
@@ -287,22 +330,35 @@ public class BookMyStay {
 
         BookingRequestQueue queue = new BookingRequestQueue();
         ReservationValidator validator = new ReservationValidator();
+        CancellationService cancellationService = new CancellationService();
 
+        // UC9 Validation (per request)
         try {
             validator.validate("Abhi", "Single", inventory);
             queue.addRequest(new Reservation("Abhi", "Single"));
+        } catch (Exception e) {
+            System.out.println("Booking failed: " + e.getMessage());
+        }
 
+        try {
             validator.validate("Subha", "Double", inventory);
             queue.addRequest(new Reservation("Subha", "Double"));
+        } catch (Exception e) {
+            System.out.println("Booking failed: " + e.getMessage());
+        }
 
+        try {
             validator.validate("Vanmathi", "Suite", inventory);
             queue.addRequest(new Reservation("Vanmathi", "Suite"));
+        } catch (Exception e) {
+            System.out.println("Booking failed: " + e.getMessage());
+        }
 
-            // Invalid case
+        // Invalid case
+        try {
             validator.validate("Test", "single", inventory);
             queue.addRequest(new Reservation("Test", "single"));
-
-        } catch (InvalidBookingException e) {
+        } catch (Exception e) {
             System.out.println("Booking failed: " + e.getMessage());
         }
 
@@ -319,8 +375,16 @@ public class BookMyStay {
             if (roomId != null) {
                 confirmedIds.add(roomId);
                 history.addReservation(r);
+                cancellationService.registerBooking(roomId, r.getRoomType());
             }
         }
+
+        // UC10: Cancel first booking
+        if (!confirmedIds.isEmpty()) {
+            cancellationService.cancelBooking(confirmedIds.get(0), inventory);
+        }
+
+        cancellationService.showRollbackHistory();
 
         System.out.println("\nAdd-On Service Selection\n");
 
