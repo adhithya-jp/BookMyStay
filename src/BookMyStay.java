@@ -8,9 +8,10 @@
  * Use Case 3: Centralized Room Inventory Management
  * Use Case 4: Room Search & Availability Check
  * Use Case 5: Booking Request (First-Come-First-Served)
+ * Use Case 6: Reservation Confirmation & Room Allocation
  *
  * @author Developer
- * @version 5.0
+ * @version 6.0
  */
 
 import java.util.*;
@@ -150,6 +151,47 @@ class BookingRequestQueue {
     }
 }
 
+/**
+ * UC6: Room Allocation Service
+ */
+class RoomAllocationService {
+
+    private Set<String> allocatedRoomIds = new HashSet<>();
+
+    public void allocateRoom(Reservation reservation, RoomInventory inventory) {
+
+        String roomType = reservation.getRoomType();
+        Map<String, Integer> availability = inventory.getRoomAvailability();
+
+        if (!availability.containsKey(roomType) || availability.get(roomType) <= 0) {
+            System.out.println("Booking failed for Guest: " + reservation.getGuestName());
+            return;
+        }
+
+        String roomId = generateRoomId(roomType);
+
+        allocatedRoomIds.add(roomId);
+
+        // Update inventory immediately
+        inventory.updateAvailability(roomType, availability.get(roomType) - 1);
+
+        System.out.println("Booking confirmed for Guest: "
+                + reservation.getGuestName() + ", Room ID: " + roomId);
+    }
+
+    private String generateRoomId(String roomType) {
+        int count = 1;
+        String roomId;
+
+        do {
+            roomId = roomType + "-" + count;
+            count++;
+        } while (allocatedRoomIds.contains(roomId));
+
+        return roomId;
+    }
+}
+
 public class BookMyStay {
 
     public static void main(String[] args) {
@@ -158,7 +200,7 @@ public class BookMyStay {
         System.out.println("Welcome to the Hotel Booking Management System");
         System.out.println("System initialized successfully.\n");
 
-        // UC4: Search
+        // UC4
         SingleRoom single = new SingleRoom();
         DoubleRoom doubleRoom = new DoubleRoom();
         SuiteRoom suite = new SuiteRoom();
@@ -167,7 +209,7 @@ public class BookMyStay {
         RoomSearchService searchService = new RoomSearchService();
         searchService.searchAvailableRooms(inventory, single, doubleRoom, suite);
 
-        // UC5: Booking Queue
+        // UC5
         System.out.println("\nBooking Request Queue\n");
 
         BookingRequestQueue bookingQueue = new BookingRequestQueue();
@@ -180,10 +222,14 @@ public class BookMyStay {
         bookingQueue.addRequest(r2);
         bookingQueue.addRequest(r3);
 
+        // UC6
+        System.out.println("\nRoom Allocation Processing\n");
+
+        RoomAllocationService allocator = new RoomAllocationService();
+
         while (bookingQueue.hasPendingRequests()) {
             Reservation r = bookingQueue.getNextRequest();
-            System.out.println("Processing booking for Guest: "
-                    + r.getGuestName() + ", Room Type: " + r.getRoomType());
+            allocator.allocateRoom(r, inventory);
         }
     }
 }
