@@ -1,13 +1,3 @@
-/**
- * ================================================================
- * MAIN CLASS – BookMyStay
- * ================================================================
- *
- * Use Case 1 → 8 (Complete System)
- *
- * @version 8.0
- */
-
 import java.util.*;
 
 /* =========================
@@ -239,14 +229,42 @@ class BookingReportService {
 
         List<Reservation> list = history.getConfirmedReservations();
 
-        if (list.isEmpty()) {
-            System.out.println("No bookings found.");
-            return;
-        }
-
         for (Reservation r : list) {
             System.out.println("Guest: " + r.getGuestName()
                     + ", Room Type: " + r.getRoomType());
+        }
+    }
+}
+
+/* =========================
+   UC9: EXCEPTION
+   ========================= */
+class InvalidBookingException extends Exception {
+    public InvalidBookingException(String message) {
+        super(message);
+    }
+}
+
+/* =========================
+   UC9: VALIDATOR
+   ========================= */
+class ReservationValidator {
+
+    public void validate(String guestName, String roomType, RoomInventory inventory)
+            throws InvalidBookingException {
+
+        if (guestName == null || guestName.trim().isEmpty()) {
+            throw new InvalidBookingException("Guest name cannot be empty.");
+        }
+
+        Map<String, Integer> availability = inventory.getRoomAvailability();
+
+        if (!availability.containsKey(roomType)) {
+            throw new InvalidBookingException("Invalid room type selected.");
+        }
+
+        if (availability.get(roomType) <= 0) {
+            throw new InvalidBookingException("Selected room not available.");
         }
     }
 }
@@ -258,10 +276,8 @@ public class BookMyStay {
 
     public static void main(String[] args) {
 
-        // UC1
         System.out.println("Welcome to the Hotel Booking Management System\n");
 
-        // UC4
         SingleRoom single = new SingleRoom();
         DoubleRoom doubleRoom = new DoubleRoom();
         SuiteRoom suite = new SuiteRoom();
@@ -269,18 +285,32 @@ public class BookMyStay {
 
         new RoomSearchService().searchAvailableRooms(inventory, single, doubleRoom, suite);
 
-        // UC5
         BookingRequestQueue queue = new BookingRequestQueue();
-        queue.addRequest(new Reservation("Abhi", "Single"));
-        queue.addRequest(new Reservation("Subha", "Double"));
-        queue.addRequest(new Reservation("Vanmathi", "Suite"));
+        ReservationValidator validator = new ReservationValidator();
 
-        // UC6 + UC8 (history integration)
+        try {
+            validator.validate("Abhi", "Single", inventory);
+            queue.addRequest(new Reservation("Abhi", "Single"));
+
+            validator.validate("Subha", "Double", inventory);
+            queue.addRequest(new Reservation("Subha", "Double"));
+
+            validator.validate("Vanmathi", "Suite", inventory);
+            queue.addRequest(new Reservation("Vanmathi", "Suite"));
+
+            // Invalid case
+            validator.validate("Test", "single", inventory);
+            queue.addRequest(new Reservation("Test", "single"));
+
+        } catch (InvalidBookingException e) {
+            System.out.println("Booking failed: " + e.getMessage());
+        }
+
         System.out.println("\nRoom Allocation Processing\n");
 
         RoomAllocationService allocator = new RoomAllocationService();
         List<String> confirmedIds = new ArrayList<>();
-        BookingHistory history = new BookingHistory(); // UC8
+        BookingHistory history = new BookingHistory();
 
         while (queue.hasPendingRequests()) {
             Reservation r = queue.getNextRequest();
@@ -288,11 +318,10 @@ public class BookMyStay {
 
             if (roomId != null) {
                 confirmedIds.add(roomId);
-                history.addReservation(r); // UC8 STORE
+                history.addReservation(r);
             }
         }
 
-        // UC7
         System.out.println("\nAdd-On Service Selection\n");
 
         AddOnServiceManager serviceManager = new AddOnServiceManager();
@@ -309,7 +338,6 @@ public class BookMyStay {
             System.out.println("Total Add-On Cost: " + total);
         }
 
-        // UC8 REPORT
         new BookingReportService().generateReport(history);
     }
 }
