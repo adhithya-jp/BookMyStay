@@ -2,33 +2,10 @@ import java.util.*;
 import java.io.*;
 
 /* =========================
-   INVENTORY (REUSED)
-   ========================= */
-class RoomInventory {
-    private Map<String, Integer> roomAvailability;
-
-    public RoomInventory() {
-        roomAvailability = new HashMap<>();
-        roomAvailability.put("Single", 5);
-        roomAvailability.put("Double", 3);
-        roomAvailability.put("Suite", 2);
-    }
-
-    public Map<String, Integer> getRoomAvailability() {
-        return roomAvailability;
-    }
-
-    public void updateAvailability(String roomType, int count) {
-        roomAvailability.put(roomType, count);
-    }
-}
-
-/* =========================
    UC12: FILE PERSISTENCE SERVICE
    ========================= */
 class FilePersistenceService {
 
-    // SAVE inventory to file
     public void saveInventory(RoomInventory inventory, String filePath) {
 
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
@@ -47,7 +24,6 @@ class FilePersistenceService {
         }
     }
 
-    // LOAD inventory from file
     public void loadInventory(RoomInventory inventory, String filePath) {
 
         File file = new File(filePath);
@@ -82,7 +58,7 @@ class FilePersistenceService {
 }
 
 /* =========================
-   MAIN CLASS (UC12)
+   MAIN CLASS
    ========================= */
 public class UseCase12DataPersistenceRecovery {
 
@@ -90,15 +66,14 @@ public class UseCase12DataPersistenceRecovery {
 
         System.out.println("System Recovery\n");
 
+        // ✅ REUSE existing class from BookMyStay
         RoomInventory inventory = new RoomInventory();
-        FilePersistenceService persistenceService = new FilePersistenceService();
 
+        FilePersistenceService persistenceService = new FilePersistenceService();
         String filePath = "inventory.txt";
 
-        // LOAD previous state
         persistenceService.loadInventory(inventory, filePath);
 
-        // DISPLAY current inventory
         System.out.println("\nCurrent Inventory:");
         for (Map.Entry<String, Integer> entry :
                 inventory.getRoomAvailability().entrySet()) {
@@ -106,7 +81,6 @@ public class UseCase12DataPersistenceRecovery {
             System.out.println(entry.getKey() + ": " + entry.getValue());
         }
 
-        // SAVE state before exit
         persistenceService.saveInventory(inventory, filePath);
     }
 }
