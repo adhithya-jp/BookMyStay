@@ -7,13 +7,13 @@
  * Use Case 2: Basic Room Types & Static Availability
  * Use Case 3: Centralized Room Inventory Management
  * Use Case 4: Room Search & Availability Check
+ * Use Case 5: Booking Request (First-Come-First-Served)
  *
  * @author Developer
- * @version 4.0
+ * @version 5.0
  */
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 abstract class Room {
     protected int numberOfBeds;
@@ -74,9 +74,6 @@ class RoomInventory {
     }
 }
 
-/**
- * UC4: Room Search Service (Read-Only)
- */
 class RoomSearchService {
 
     public void searchAvailableRooms(
@@ -109,6 +106,50 @@ class RoomSearchService {
     }
 }
 
+/**
+ * UC5: Reservation (Booking Request)
+ */
+class Reservation {
+    private String guestName;
+    private String roomType;
+
+    public Reservation(String guestName, String roomType) {
+        this.guestName = guestName;
+        this.roomType = roomType;
+    }
+
+    public String getGuestName() {
+        return guestName;
+    }
+
+    public String getRoomType() {
+        return roomType;
+    }
+}
+
+/**
+ * UC5: Booking Queue (FIFO)
+ */
+class BookingRequestQueue {
+    private Queue<Reservation> requestQueue;
+
+    public BookingRequestQueue() {
+        requestQueue = new LinkedList<>();
+    }
+
+    public void addRequest(Reservation reservation) {
+        requestQueue.offer(reservation);
+    }
+
+    public Reservation getNextRequest() {
+        return requestQueue.poll();
+    }
+
+    public boolean hasPendingRequests() {
+        return !requestQueue.isEmpty();
+    }
+}
+
 public class BookMyStay {
 
     public static void main(String[] args) {
@@ -117,15 +158,32 @@ public class BookMyStay {
         System.out.println("Welcome to the Hotel Booking Management System");
         System.out.println("System initialized successfully.\n");
 
-        // Initialize objects
+        // UC4: Search
         SingleRoom single = new SingleRoom();
         DoubleRoom doubleRoom = new DoubleRoom();
         SuiteRoom suite = new SuiteRoom();
-
         RoomInventory inventory = new RoomInventory();
 
-        // UC4: Search (read-only)
         RoomSearchService searchService = new RoomSearchService();
         searchService.searchAvailableRooms(inventory, single, doubleRoom, suite);
+
+        // UC5: Booking Queue
+        System.out.println("\nBooking Request Queue\n");
+
+        BookingRequestQueue bookingQueue = new BookingRequestQueue();
+
+        Reservation r1 = new Reservation("Abhi", "Single");
+        Reservation r2 = new Reservation("Subha", "Double");
+        Reservation r3 = new Reservation("Vanmathi", "Suite");
+
+        bookingQueue.addRequest(r1);
+        bookingQueue.addRequest(r2);
+        bookingQueue.addRequest(r3);
+
+        while (bookingQueue.hasPendingRequests()) {
+            Reservation r = bookingQueue.getNextRequest();
+            System.out.println("Processing booking for Guest: "
+                    + r.getGuestName() + ", Room Type: " + r.getRoomType());
+        }
     }
 }
